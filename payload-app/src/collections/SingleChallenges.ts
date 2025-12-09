@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-export const Challenges: CollectionConfig = {
+export const SingleChallenges: CollectionConfig = {
   slug: 'single-challenges',
   admin: {
     useAsTitle: 'name',
@@ -359,8 +359,6 @@ export const Challenges: CollectionConfig = {
                 // Get all challenges in this group
                 const challengeIds = Array.isArray(groupedChallenge.general?.challenges) 
                   ? groupedChallenge.general.challenges.map((c: any) => typeof c === 'string' ? c : c.id)
-                  : Array.isArray((groupedChallenge as { challenges?: any[] }).challenges)
-                  ? (groupedChallenge as { challenges: any[] }).challenges.map((c: any) => typeof c === 'string' ? c : c.id)
                   : []
                 
                 // Fetch all challenges to aggregate their data
@@ -438,7 +436,7 @@ export const Challenges: CollectionConfig = {
                     id: groupId,
                     data: updateData,
                     req,
-                    skipAccessControl: true,
+                    overrideAccess: true,
                   })
                 }
               } catch (error) {
@@ -465,7 +463,7 @@ export const Challenges: CollectionConfig = {
             })
 
             // Create notifications for each admin
-            // Use skipAccessControl to ensure creation succeeds regardless of access control
+            // Use overrideAccess to ensure creation succeeds regardless of access control
             for (const admin of admins.docs) {
               const challengeName = (doc as { name?: string }).name || 'Unknown'
               await payload.create({
@@ -476,7 +474,7 @@ export const Challenges: CollectionConfig = {
                   editor: req.user.id,
                 },
                 req,
-                skipAccessControl: true,
+                overrideAccess: true,
               })
             }
           } catch (error) {
@@ -506,8 +504,6 @@ export const Challenges: CollectionConfig = {
               
               const currentChallenges = Array.isArray(groupedChallenge.general?.challenges) 
                 ? groupedChallenge.general.challenges.map((c: any) => typeof c === 'string' ? c : c.id)
-                : Array.isArray((groupedChallenge as { challenges?: any[] }).challenges)
-                ? (groupedChallenge as { challenges: any[] }).challenges.map((c: any) => typeof c === 'string' ? c : c.id)
                 : []
               
               const updatedChallenges = currentChallenges.filter((challengeId: string) => challengeId !== doc.id)
@@ -523,7 +519,7 @@ export const Challenges: CollectionConfig = {
                   },
                 },
                 req,
-                skipAccessControl: true,
+                overrideAccess: true,
               })
               
               // Recalculate aggregated fields from remaining challenges
@@ -593,7 +589,7 @@ export const Challenges: CollectionConfig = {
                     id: groupId,
                     data: updateData,
                     req,
-                    skipAccessControl: true,
+                    overrideAccess: true,
                   })
                 }
               } else {
@@ -611,7 +607,7 @@ export const Challenges: CollectionConfig = {
                     },
                   },
                   req,
-                  skipAccessControl: true,
+                  overrideAccess: true,
                 })
               }
             } catch (error) {

@@ -376,12 +376,12 @@ export const GroupedChallenges: CollectionConfig = {
                   id: challengeId,
                   data: {
                     general: {
-                      ...singleChallenge.general,
+                      ...(singleChallenge.general || {}),
                       groupedChallenges: updatedGroups,
                     },
                   },
                   req,
-                  skipAccessControl: true,
+                  overrideAccess: true,
                 })
               } catch (error) {
                 console.error(`[Sync] Error removing grouped challenge from single challenge ${challengeId}:`, error)
@@ -407,12 +407,12 @@ export const GroupedChallenges: CollectionConfig = {
                     id: challengeId,
                     data: {
                       general: {
-                        ...singleChallenge.general,
+                        ...(singleChallenge.general || {}),
                         groupedChallenges: [...currentGroups, doc.id],
                       },
                     },
                     req,
-                    skipAccessControl: true,
+                    overrideAccess: true,
                   })
                 }
               } catch (error) {
@@ -439,7 +439,7 @@ export const GroupedChallenges: CollectionConfig = {
             })
 
             // Create notifications for each admin
-            // Use skipAccessControl to ensure creation succeeds regardless of access control
+            // Use overrideAccess to ensure creation succeeds regardless of access control
             for (const admin of admins.docs) {
               const challengeName = (doc as { name?: string }).name || 'Unknown'
               await payload.create({
@@ -450,7 +450,7 @@ export const GroupedChallenges: CollectionConfig = {
                   editor: req.user.id,
                 },
                 req,
-                skipAccessControl: true,
+                overrideAccess: true,
               })
             }
           } catch (error) {
@@ -487,12 +487,12 @@ export const GroupedChallenges: CollectionConfig = {
                 id: challengeId,
                 data: {
                   general: {
-                    ...singleChallenge.general,
+                    ...(singleChallenge.general || {}),
                     groupedChallenges: updatedGroups,
                   },
                 },
                 req,
-                skipAccessControl: true,
+                overrideAccess: true,
               })
             } catch (error) {
               console.error(`[Sync] Error removing deleted grouped challenge from single challenge ${challengeId}:`, error)

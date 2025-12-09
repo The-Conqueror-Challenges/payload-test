@@ -7,7 +7,7 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
-import { Challenges } from './collections/Challenges'
+import { SingleChallenges } from './collections/SingleChallenges'
 import { GroupedChallenges } from './collections/GroupedChallenges'
 import { Notifications } from './collections/Notifications'
 
@@ -21,7 +21,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Challenges, GroupedChallenges, Notifications],
+  collections: [Users, Media, SingleChallenges, GroupedChallenges, Notifications],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

@@ -41,7 +41,7 @@ export const Media: CollectionConfig = {
       relationTo: 'single-challenges',
       required: false,
       label: 'Single Challenge',
-      validate: (value, { data }) => {
+      validate: (value: any, { data }: { data?: any }) => {
         if (data?.challengeType === 'single' && !value) {
           return 'Please select a Single Challenge. This field is required when "Single Challenge" is selected.'
         }
@@ -58,7 +58,7 @@ export const Media: CollectionConfig = {
       relationTo: 'grouped-challenges',
       required: false,
       label: 'Grouped Challenge',
-      validate: (value, { data }) => {
+      validate: (value: any, { data }: { data?: any }) => {
         if (data?.challengeType === 'grouped' && !value) {
           return 'Please select a Grouped Challenge. This field is required when "Grouped Challenge" is selected.'
         }
