@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Production
+build/
+dist/
+
+# Misc
+.DS_Store
+*.pem
+*.log
+
+# Environment files
+.env
+.env*.local
+test.env
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+
+# Media (if you want to ignore uploaded media)
+# Uncomment if you don't want to track media files
+# /payload-app/media/
+
