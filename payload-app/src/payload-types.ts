@@ -69,26 +69,22 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
-    challenges: Challenge;
+    'single-challenges': SingleChallenge;
+    'grouped-challenges': GroupedChallenge;
     notifications: Notification;
     'payload-kv': PayloadKv;
-    'payload-folders': FolderInterface;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {
-    'payload-folders': {
-      documentsAndFolders: 'payload-folders' | 'challenges';
-    };
-  };
+  collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    challenges: ChallengesSelect<false> | ChallengesSelect<true>;
+    'single-challenges': SingleChallengesSelect<false> | SingleChallengesSelect<true>;
+    'grouped-challenges': GroupedChallengesSelect<false> | GroupedChallengesSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
-    'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -158,6 +154,18 @@ export interface User {
 export interface Media {
   id: string;
   alt: string;
+  /**
+   * Select the type of challenge, or choose "None"
+   */
+  challengeType: 'none' | 'single' | 'grouped';
+  /**
+   * Select a single challenge (required)
+   */
+  singleChallenge?: (string | null) | SingleChallenge;
+  /**
+   * Select a grouped challenge (required)
+   */
+  groupedChallenge?: (string | null) | GroupedChallenge;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -172,42 +180,215 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "challenges".
+ * via the `definition` "single-challenges".
  */
-export interface Challenge {
+export interface SingleChallenge {
   id: string;
-  title: string;
+  /**
+   * The publication status of the challenge
+   */
   status: 'draft' | 'pending_approval' | 'published';
-  folder?: (string | null) | FolderInterface;
+  /**
+   * The name of the challenge
+   */
+  name: string;
+  general: {
+    /**
+     * URL-friendly identifier
+     */
+    slug: string;
+    /**
+     * The date and time when the challenge will be launched
+     */
+    launchDate: string;
+    /**
+     * The grouped challenges that include this single challenge (automatically synced)
+     */
+    groupedChallenges?: (string | GroupedChallenge)[] | null;
+  };
+  /**
+   * Add multiple distance groups for different measurement contexts
+   */
+  distances?:
+    | {
+        /**
+         * The total distance of the challenge in kilometers as shown in the app
+         */
+        appDistanceKm: number;
+        /**
+         * The total distance of the challenge in miles as shown in the app
+         */
+        appDistanceMi: number;
+        /**
+         * The marketing distance in kilometers
+         */
+        marketingDistanceKm: number;
+        /**
+         * The marketing distance in miles
+         */
+        marketingDistanceMi: number;
+        id?: string | null;
+      }[]
+    | null;
+  routeDetails: {
+    /**
+     * The number of virtual postcards available in this challenge
+     */
+    virtualPostcards: number;
+    /**
+     * The number of local spots or checkpoints in this challenge
+     */
+    localSpots: number;
+    /**
+     * The type of map display to use for this challenge
+     */
+    mapType: 'roadmap' | 'satellite' | 'terrain' | 'hybrid';
+    /**
+     * The continent where this challenge takes place
+     */
+    continent: 'africa' | 'antarctica' | 'asia' | 'europe' | 'north_america' | 'oceania' | 'south_america';
+  };
+  media: {
+    /**
+     * Hex color code (e.g., #FF5733)
+     */
+    colorHex: string;
+    /**
+     * The image displayed on the front of the medal
+     */
+    medalFrontImage?: (string | null) | Media;
+    /**
+     * The image displayed on the back of the medal
+     */
+    medalBackImage?: (string | null) | Media;
+    /**
+     * The background image used for the challenge
+     */
+    backgroundImage?: (string | null) | Media;
+    /**
+     * The round sticker image for this challenge
+     */
+    roundStickerImage?: (string | null) | Media;
+    /**
+     * The video showcasing the medal
+     */
+    medalShowreelVideo?: (string | null) | Media;
+    /**
+     * The thumbnail image for the medal showreel video
+     */
+    medalShowreelThumbnail?: (string | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-folders".
+ * via the `definition` "grouped-challenges".
  */
-export interface FolderInterface {
+export interface GroupedChallenge {
   id: string;
+  /**
+   * The publication status of the challenge
+   */
+  status: 'draft' | 'pending_approval' | 'published';
+  /**
+   * The name of the challenge
+   */
   name: string;
-  folder?: (string | null) | FolderInterface;
-  documentsAndFolders?: {
-    docs?: (
-      | {
-          relationTo?: 'payload-folders';
-          value: string | FolderInterface;
-        }
-      | {
-          relationTo?: 'challenges';
-          value: string | Challenge;
-        }
-    )[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
+  general: {
+    /**
+     * URL-friendly identifier
+     */
+    slug: string;
+    /**
+     * The date and time when the challenge will be launched
+     */
+    launchDate: string;
+    /**
+     * Select the individual challenges that are part of this group
+     */
+    challenges: (string | SingleChallenge)[];
   };
-  folderType?: 'challenges'[] | null;
+  /**
+   * Add multiple distance groups for different measurement contexts
+   */
+  distances?:
+    | {
+        /**
+         * The total distance of the challenge in kilometers as shown in the app
+         */
+        appDistanceKm: number;
+        /**
+         * The total distance of the challenge in miles as shown in the app
+         */
+        appDistanceMi: number;
+        /**
+         * The marketing distance in kilometers
+         */
+        marketingDistanceKm: number;
+        /**
+         * The marketing distance in miles
+         */
+        marketingDistanceMi: number;
+        id?: string | null;
+      }[]
+    | null;
+  routeDetails: {
+    /**
+     * The number of virtual postcards available in this challenge
+     */
+    virtualPostcards: number;
+    /**
+     * The number of local spots or checkpoints in this challenge
+     */
+    localSpots: number;
+    /**
+     * The type of map display to use for this challenge
+     */
+    mapType: 'roadmap' | 'satellite' | 'terrain' | 'hybrid';
+    /**
+     * The continent where this challenge takes place
+     */
+    continent: 'africa' | 'antarctica' | 'asia' | 'europe' | 'north_america' | 'oceania' | 'south_america';
+  };
+  media: {
+    /**
+     * Hex color code (e.g., #FF5733)
+     */
+    colorHex: string;
+    /**
+     * The image displayed on the front of the medal
+     */
+    medalFrontImage?: (string | null) | Media;
+    /**
+     * The image displayed on the back of the medal
+     */
+    medalBackImage?: (string | null) | Media;
+    /**
+     * The background image used for the challenge
+     */
+    backgroundImage?: (string | null) | Media;
+    /**
+     * The header image displayed at the top of the grouped challenge
+     */
+    headerImage?: (string | null) | Media;
+    /**
+     * The round sticker image for this challenge
+     */
+    roundStickerImage?: (string | null) | Media;
+    /**
+     * The video showcasing the medal
+     */
+    medalShowreelVideo?: (string | null) | Media;
+    /**
+     * The thumbnail image for the medal showreel video
+     */
+    medalShowreelThumbnail?: (string | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -216,10 +397,16 @@ export interface FolderInterface {
 export interface Notification {
   id: string;
   message: string;
-  challenge?: (string | null) | Challenge;
+  challenge?:
+    | ({
+        relationTo: 'single-challenges';
+        value: string | SingleChallenge;
+      } | null)
+    | ({
+        relationTo: 'grouped-challenges';
+        value: string | GroupedChallenge;
+      } | null);
   editor?: (string | null) | User;
-  read?: boolean | null;
-  type?: ('challenge_created' | 'challenge_updated') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -256,16 +443,16 @@ export interface PayloadLockedDocument {
         value: string | Media;
       } | null)
     | ({
-        relationTo: 'challenges';
-        value: string | Challenge;
+        relationTo: 'single-challenges';
+        value: string | SingleChallenge;
+      } | null)
+    | ({
+        relationTo: 'grouped-challenges';
+        value: string | GroupedChallenge;
       } | null)
     | ({
         relationTo: 'notifications';
         value: string | Notification;
-      } | null)
-    | ({
-        relationTo: 'payload-folders';
-        value: string | FolderInterface;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -338,6 +525,9 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  challengeType?: T;
+  singleChallenge?: T;
+  groupedChallenge?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -352,12 +542,93 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "challenges_select".
+ * via the `definition` "single-challenges_select".
  */
-export interface ChallengesSelect<T extends boolean = true> {
-  title?: T;
+export interface SingleChallengesSelect<T extends boolean = true> {
   status?: T;
-  folder?: T;
+  name?: T;
+  general?:
+    | T
+    | {
+        slug?: T;
+        launchDate?: T;
+        groupedChallenges?: T;
+      };
+  distances?:
+    | T
+    | {
+        appDistanceKm?: T;
+        appDistanceMi?: T;
+        marketingDistanceKm?: T;
+        marketingDistanceMi?: T;
+        id?: T;
+      };
+  routeDetails?:
+    | T
+    | {
+        virtualPostcards?: T;
+        localSpots?: T;
+        mapType?: T;
+        continent?: T;
+      };
+  media?:
+    | T
+    | {
+        colorHex?: T;
+        medalFrontImage?: T;
+        medalBackImage?: T;
+        backgroundImage?: T;
+        roundStickerImage?: T;
+        medalShowreelVideo?: T;
+        medalShowreelThumbnail?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "grouped-challenges_select".
+ */
+export interface GroupedChallengesSelect<T extends boolean = true> {
+  status?: T;
+  name?: T;
+  general?:
+    | T
+    | {
+        slug?: T;
+        launchDate?: T;
+        challenges?: T;
+      };
+  distances?:
+    | T
+    | {
+        appDistanceKm?: T;
+        appDistanceMi?: T;
+        marketingDistanceKm?: T;
+        marketingDistanceMi?: T;
+        id?: T;
+      };
+  routeDetails?:
+    | T
+    | {
+        virtualPostcards?: T;
+        localSpots?: T;
+        mapType?: T;
+        continent?: T;
+      };
+  media?:
+    | T
+    | {
+        colorHex?: T;
+        medalFrontImage?: T;
+        medalBackImage?: T;
+        backgroundImage?: T;
+        headerImage?: T;
+        roundStickerImage?: T;
+        medalShowreelVideo?: T;
+        medalShowreelThumbnail?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -370,8 +641,6 @@ export interface NotificationsSelect<T extends boolean = true> {
   message?: T;
   challenge?: T;
   editor?: T;
-  read?: T;
-  type?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -382,18 +651,6 @@ export interface NotificationsSelect<T extends boolean = true> {
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-folders_select".
- */
-export interface PayloadFoldersSelect<T extends boolean = true> {
-  name?: T;
-  folder?: T;
-  documentsAndFolders?: T;
-  folderType?: T;
-  updatedAt?: T;
-  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

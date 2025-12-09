@@ -4,7 +4,7 @@ export const Notifications: CollectionConfig = {
   slug: 'notifications',
   admin: {
     useAsTitle: 'message',
-    defaultColumns: ['message', 'read', 'createdAt'],
+    defaultColumns: ['message', 'createdAt'],
   },
   access: {
     read: ({ req: { user } }) => {
@@ -35,7 +35,7 @@ export const Notifications: CollectionConfig = {
     {
       name: 'challenge',
       type: 'relationship',
-      relationTo: 'challenges',
+      relationTo: ['single-challenges', 'grouped-challenges'],
       required: false,
     },
     {
@@ -44,27 +44,40 @@ export const Notifications: CollectionConfig = {
       relationTo: 'users',
       required: false,
     },
-    {
-      name: 'read',
-      type: 'checkbox',
-      defaultValue: false,
-    },
-    {
-      name: 'type',
-      type: 'select',
-      options: [
-        {
-          label: 'Challenge Created',
-          value: 'challenge_created',
-        },
-        {
-          label: 'Challenge Updated',
-          value: 'challenge_updated',
-        },
-      ],
-      defaultValue: 'challenge_created',
-    },
   ],
   timestamps: true,
+  hooks: {
+    afterRead: [
+      ({ doc }) => {
+        // Serialize relationship fields to prevent serialization errors when passing to client components
+        // Convert Mongoose documents or complex objects to plain values (IDs or strings)
+        const serializeRelationship = (value: unknown): unknown => {
+          if (!value) return value
+          if (typeof value === 'string') return value
+          if (typeof value === 'object' && value !== null) {
+            // If it's a Mongoose document or has toJSON method, extract the ID
+            if ('toJSON' in value || 'buffer' in value || '_id' in value) {
+              return (value as { id?: string; _id?: unknown }).id || 
+                     String((value as { _id?: unknown })._id || value)
+            }
+            // If it has an id property, use it
+            if ('id' in value) {
+              return (value as { id: string }).id
+            }
+          }
+          return value
+        }
+
+        if (doc.challenge) {
+          doc.challenge = serializeRelationship(doc.challenge)
+        }
+        if (doc.editor) {
+          doc.editor = serializeRelationship(doc.editor)
+        }
+        
+        return doc
+      },
+    ],
+  },
 }
 
