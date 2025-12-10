@@ -6,6 +6,21 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
   },
   auth: true,
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => {
+      // Only admins can create users
+      return user?.role === 'admin'
+    },
+    update: ({ req: { user } }) => {
+      // Only admins can update users
+      return user?.role === 'admin'
+    },
+    delete: ({ req: { user } }) => {
+      // Only admins can delete users
+      return user?.role === 'admin'
+    },
+  },
   fields: [
     {
       name: 'role',
@@ -18,6 +33,10 @@ export const Users: CollectionConfig = {
         {
           label: 'Editor',
           value: 'editor',
+        },
+        {
+          label: 'Viewer',
+          value: 'viewer',
         },
       ],
       defaultValue: 'editor',

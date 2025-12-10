@@ -128,7 +128,7 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
-  role: 'admin' | 'editor';
+  role: 'admin' | 'editor' | 'viewer';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -153,6 +153,10 @@ export interface User {
  */
 export interface Media {
   id: string;
+  /**
+   * Shows who last modified this document
+   */
+  lastModifiedBy?: string | null;
   alt: string;
   /**
    * Select the type of challenge, or choose "None"
@@ -163,7 +167,7 @@ export interface Media {
    */
   singleChallenge?: (string | null) | SingleChallenge;
   /**
-   * Select a grouped challenge (required)
+   * Select a challenge group (required)
    */
   groupedChallenge?: (string | null) | GroupedChallenge;
   updatedAt: string;
@@ -185,6 +189,10 @@ export interface Media {
 export interface SingleChallenge {
   id: string;
   /**
+   * Shows who last modified this document
+   */
+  lastModifiedBy?: string | null;
+  /**
    * The publication status of the challenge
    */
   status: 'draft' | 'pending_approval' | 'published';
@@ -202,7 +210,7 @@ export interface SingleChallenge {
      */
     launchDate: string;
     /**
-     * The grouped challenges that include this single challenge (automatically synced)
+     * The challenge groups that include this single challenge (automatically synced)
      */
     groupedChallenges?: (string | GroupedChallenge)[] | null;
   };
@@ -230,6 +238,20 @@ export interface SingleChallenge {
         id?: string | null;
       }[]
     | null;
+  productIds: {
+    /**
+     * Product ID for digital entry
+     */
+    digitalEntry: string;
+    /**
+     * Product ID for medal entry
+     */
+    medalEntry: string;
+    /**
+     * Product ID for apparel entry
+     */
+    apparelEntry: string;
+  };
   routeDetails: {
     /**
      * The number of virtual postcards available in this challenge
@@ -256,27 +278,27 @@ export interface SingleChallenge {
     /**
      * The image displayed on the front of the medal
      */
-    medalFrontImage?: (string | null) | Media;
+    medalFrontImage: string | Media;
     /**
      * The image displayed on the back of the medal
      */
-    medalBackImage?: (string | null) | Media;
+    medalBackImage: string | Media;
     /**
      * The background image used for the challenge
      */
-    backgroundImage?: (string | null) | Media;
+    backgroundImage: string | Media;
     /**
      * The round sticker image for this challenge
      */
-    roundStickerImage?: (string | null) | Media;
+    roundStickerImage: string | Media;
     /**
      * The video showcasing the medal
      */
-    medalShowreelVideo?: (string | null) | Media;
+    medalShowreelVideo: string | Media;
     /**
      * The thumbnail image for the medal showreel video
      */
-    medalShowreelThumbnail?: (string | null) | Media;
+    medalShowreelThumbnail: string | Media;
   };
   updatedAt: string;
   createdAt: string;
@@ -288,6 +310,10 @@ export interface SingleChallenge {
  */
 export interface GroupedChallenge {
   id: string;
+  /**
+   * Shows who last modified this document
+   */
+  lastModifiedBy?: string | null;
   /**
    * The publication status of the challenge
    */
@@ -360,31 +386,31 @@ export interface GroupedChallenge {
     /**
      * The image displayed on the front of the medal
      */
-    medalFrontImage?: (string | null) | Media;
+    medalFrontImage: string | Media;
     /**
      * The image displayed on the back of the medal
      */
-    medalBackImage?: (string | null) | Media;
+    medalBackImage: string | Media;
     /**
      * The background image used for the challenge
      */
-    backgroundImage?: (string | null) | Media;
+    backgroundImage: string | Media;
     /**
      * The header image displayed at the top of the grouped challenge
      */
-    headerImage?: (string | null) | Media;
+    headerImage: string | Media;
     /**
      * The round sticker image for this challenge
      */
-    roundStickerImage?: (string | null) | Media;
+    roundStickerImage: string | Media;
     /**
      * The video showcasing the medal
      */
-    medalShowreelVideo?: (string | null) | Media;
+    medalShowreelVideo: string | Media;
     /**
      * The thumbnail image for the medal showreel video
      */
-    medalShowreelThumbnail?: (string | null) | Media;
+    medalShowreelThumbnail: string | Media;
   };
   updatedAt: string;
   createdAt: string;
@@ -396,7 +422,14 @@ export interface GroupedChallenge {
  */
 export interface Notification {
   id: string;
+  /**
+   * Shows who last modified this document
+   */
+  lastModifiedBy?: string | null;
   message: string;
+  /**
+   * Click to go to the related challenge for editing/approval
+   */
   challenge?:
     | ({
         relationTo: 'single-challenges';
@@ -406,6 +439,10 @@ export interface Notification {
         relationTo: 'grouped-challenges';
         value: string | GroupedChallenge;
       } | null);
+  /**
+   * Click to go to the related media file for editing/approval
+   */
+  media?: (string | null) | Media;
   editor?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
@@ -524,6 +561,7 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  lastModifiedBy?: T;
   alt?: T;
   challengeType?: T;
   singleChallenge?: T;
@@ -545,6 +583,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "single-challenges_select".
  */
 export interface SingleChallengesSelect<T extends boolean = true> {
+  lastModifiedBy?: T;
   status?: T;
   name?: T;
   general?:
@@ -562,6 +601,13 @@ export interface SingleChallengesSelect<T extends boolean = true> {
         marketingDistanceKm?: T;
         marketingDistanceMi?: T;
         id?: T;
+      };
+  productIds?:
+    | T
+    | {
+        digitalEntry?: T;
+        medalEntry?: T;
+        apparelEntry?: T;
       };
   routeDetails?:
     | T
@@ -591,6 +637,7 @@ export interface SingleChallengesSelect<T extends boolean = true> {
  * via the `definition` "grouped-challenges_select".
  */
 export interface GroupedChallengesSelect<T extends boolean = true> {
+  lastModifiedBy?: T;
   status?: T;
   name?: T;
   general?:
@@ -638,8 +685,10 @@ export interface GroupedChallengesSelect<T extends boolean = true> {
  * via the `definition` "notifications_select".
  */
 export interface NotificationsSelect<T extends boolean = true> {
+  lastModifiedBy?: T;
   message?: T;
   challenge?: T;
+  media?: T;
   editor?: T;
   updatedAt?: T;
   createdAt?: T;

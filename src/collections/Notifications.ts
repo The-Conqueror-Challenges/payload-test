@@ -4,29 +4,41 @@ export const Notifications: CollectionConfig = {
   slug: 'notifications',
   admin: {
     useAsTitle: 'message',
-    defaultColumns: ['message', 'createdAt'],
+    defaultColumns: ['message', 'challenge', 'media', 'editor', 'createdAt'],
+    disableDuplicate: true,
   },
   access: {
     read: ({ req: { user } }) => {
       // Only admins can read notifications
-      return user?.role === 'admin'
+      if (!user) return false
+      return user.role === 'admin'
     },
-    create: ({ req }) => {
-      // Allow creation from authenticated contexts (hooks run with user context)
-      // This allows hooks to create notifications, but prevents manual creation through admin UI
-      // Hooks will have req.user set, so this will allow hook-based creation
-      return !!req.user
+    create: () => {
+      // Prevent manual creation through admin UI
+      // Notifications are only created automatically by hooks using overrideAccess: true
+      return false
     },
     update: ({ req: { user } }) => {
       // Only admins can update (mark as read)
-      return user?.role === 'admin'
+      if (!user) return false
+      return user.role === 'admin'
     },
     delete: ({ req: { user } }) => {
       // Only admins can delete
-      return user?.role === 'admin'
+      if (!user) return false
+      return user.role === 'admin'
     },
   },
   fields: [
+    {
+      name: 'lastModifiedBy',
+      type: 'text',
+      label: 'Last Modified By',
+      admin: {
+        readOnly: true,
+        description: 'Shows who last modified this document',
+      },
+    },
     {
       name: 'message',
       type: 'text',
@@ -37,6 +49,20 @@ export const Notifications: CollectionConfig = {
       type: 'relationship',
       relationTo: ['single-challenges', 'grouped-challenges'],
       required: false,
+      admin: {
+        description: 'Click to go to the related challenge for editing/approval',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'media',
+      type: 'relationship',
+      relationTo: 'media',
+      required: false,
+      admin: {
+        description: 'Click to go to the related media file for editing/approval',
+        position: 'sidebar',
+      },
     },
     {
       name: 'editor',
@@ -47,6 +73,15 @@ export const Notifications: CollectionConfig = {
   ],
   timestamps: true,
   hooks: {
+    beforeChange: [
+      ({ req, data }) => {
+        // Set lastModifiedBy to current user's email
+        if (req.user?.email) {
+          data.lastModifiedBy = req.user.email
+        }
+        return data
+      },
+    ],
     afterRead: [
       ({ doc }) => {
         // Serialize relationship fields to prevent serialization errors when passing to client components
@@ -70,6 +105,9 @@ export const Notifications: CollectionConfig = {
 
         if (doc.challenge) {
           doc.challenge = serializeRelationship(doc.challenge)
+        }
+        if (doc.media) {
+          doc.media = serializeRelationship(doc.media)
         }
         if (doc.editor) {
           doc.editor = serializeRelationship(doc.editor)

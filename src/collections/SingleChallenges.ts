@@ -7,6 +7,15 @@ export const SingleChallenges: CollectionConfig = {
   },
   fields: [
     {
+      name: 'lastModifiedBy',
+      type: 'text',
+      label: 'Last Modified By',
+      admin: {
+        readOnly: true,
+        description: 'Shows who last modified this document',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       admin: {
@@ -30,11 +39,18 @@ export const SingleChallenges: CollectionConfig = {
       required: true,
       access: {
         read: () => true,
-        update: ({ req: { user } }) => {
+        update: ({ req: { user }, data }) => {
           // Only admins can change status to published
           if (user?.role === 'admin') return true
-          // Editors can only set to draft or pending_approval
-          return user?.role === 'editor'
+          // Editors can only set to draft or pending_approval, not published
+          if (user?.role === 'editor') {
+            // Prevent editors from setting status to published
+            if (data?.status === 'published') {
+              return false
+            }
+            return true
+          }
+          return false
         },
       },
     },
@@ -79,9 +95,9 @@ export const SingleChallenges: CollectionConfig = {
           relationTo: 'grouped-challenges',
           hasMany: true,
           required: false,
-          label: 'Part of Grouped Challenges',
+          label: 'Part of Challenge Groups',
           admin: {
-            description: 'The grouped challenges that include this single challenge (automatically synced)',
+            description: 'The challenge groups that include this single challenge (automatically synced)',
             readOnly: true,
             isSortable: false,
           },
@@ -136,6 +152,40 @@ export const SingleChallenges: CollectionConfig = {
           admin: {
             description: 'The marketing distance in miles',
             step: 0.01,
+          },
+        },
+      ],
+    },
+    {
+      name: 'productIds',
+      type: 'group',
+      label: 'Product IDs',
+      fields: [
+        {
+          name: 'digitalEntry',
+          type: 'text',
+          required: true,
+          label: 'Digital Entry',
+          admin: {
+            description: 'Product ID for digital entry',
+          },
+        },
+        {
+          name: 'medalEntry',
+          type: 'text',
+          required: true,
+          label: 'Medal Entry',
+          admin: {
+            description: 'Product ID for medal entry',
+          },
+        },
+        {
+          name: 'apparelEntry',
+          type: 'text',
+          required: true,
+          label: 'Apparel Entry',
+          admin: {
+            description: 'Product ID for apparel entry',
           },
         },
       ],
@@ -251,6 +301,7 @@ export const SingleChallenges: CollectionConfig = {
           name: 'medalFrontImage',
           type: 'upload',
           relationTo: 'media',
+          required: true,
           label: 'Medal Front Image',
           admin: {
             description: 'The image displayed on the front of the medal',
@@ -260,6 +311,7 @@ export const SingleChallenges: CollectionConfig = {
           name: 'medalBackImage',
           type: 'upload',
           relationTo: 'media',
+          required: true,
           label: 'Medal Back Image',
           admin: {
             description: 'The image displayed on the back of the medal',
@@ -269,6 +321,7 @@ export const SingleChallenges: CollectionConfig = {
           name: 'backgroundImage',
           type: 'upload',
           relationTo: 'media',
+          required: true,
           label: 'Background Image',
           admin: {
             description: 'The background image used for the challenge',
@@ -278,6 +331,7 @@ export const SingleChallenges: CollectionConfig = {
           name: 'roundStickerImage',
           type: 'upload',
           relationTo: 'media',
+          required: true,
           label: 'Round Sticker Image',
           admin: {
             description: 'The round sticker image for this challenge',
@@ -287,6 +341,7 @@ export const SingleChallenges: CollectionConfig = {
           name: 'medalShowreelVideo',
           type: 'upload',
           relationTo: 'media',
+          required: true,
           label: 'Medal Showreel Video',
           admin: {
             description: 'The video showcasing the medal',
@@ -296,6 +351,7 @@ export const SingleChallenges: CollectionConfig = {
           name: 'medalShowreelThumbnail',
           type: 'upload',
           relationTo: 'media',
+          required: true,
           label: 'Medal Showreel Thumbnail',
           admin: {
             description: 'The thumbnail image for the medal showreel video',
@@ -322,13 +378,22 @@ export const SingleChallenges: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ req, operation, data }) => {
-        // If editor is creating/updating, set status to pending_approval
+        // Set lastModifiedBy to current user's email
+        if (req.user?.email) {
+          data.lastModifiedBy = req.user.email
+        }
+        
+        // If editor is creating/updating, prevent them from setting status to published
         if (req.user?.role === 'editor') {
           if (operation === 'create') {
             data.status = 'pending_approval'
-          } else if (operation === 'update' && data.status !== 'published') {
-            // If editor updates and it's not already published, set to pending_approval
-            if (data.status !== 'draft') {
+          } else if (operation === 'update') {
+            // Editors cannot set status to published - only admins can approve
+            if (data.status === 'published') {
+              // Revert to pending_approval if editor tries to set to published
+              data.status = 'pending_approval'
+            } else if (data.status && data.status !== 'draft' && data.status !== 'pending_approval') {
+              // Ensure only valid statuses for editors
               data.status = 'pending_approval'
             }
           }
@@ -448,8 +513,8 @@ export const SingleChallenges: CollectionConfig = {
           }
         }
         
-        // Notify admins when a challenge is created or updated by any user (admin or editor)
-        if (req.user && (operation === 'create' || operation === 'update')) {
+        // Notify admins when a challenge is created or updated by editors (not admins)
+        if (req.user && req.user.role === 'editor' && (operation === 'create' || operation === 'update')) {
           try {
             // Find all admin users
             const admins = await payload.find({
@@ -469,7 +534,7 @@ export const SingleChallenges: CollectionConfig = {
               await payload.create({
                 collection: 'notifications',
                 data: {
-                  message: `${req.user.role === 'admin' ? 'Admin' : 'Editor'} ${req.user.email} ${operation === 'create' ? 'created' : 'updated'} challenge "${challengeName}" - Status: ${doc.status}`,
+                  message: `Editor ${req.user.email} ${operation === 'create' ? 'created' : 'updated'} challenge "${challengeName}" - Status: ${doc.status}`,
                   challenge: doc.id,
                   editor: req.user.id,
                 },
